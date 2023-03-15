@@ -38,7 +38,7 @@ class CipheredGUI:
                     dpg.add_text(field)
                     dpg.add_input_text(default_value=DEFAULT_VALUES[field], tag=f"connection_{field}")
         
-        with dpg.window(label = "Password", pos = (400, 150)), width=400, height = 300, show = False, tag = "connection_windows"):
+        with dpg.window(label = "Password", pos = (400, 150), width=400, height = 300, show = False, tag = "connection_windows"):
             for field in ["host", "port", "name"]:
                 with dpg.group(horizontal = True):
                     dpg.add_text(field)
