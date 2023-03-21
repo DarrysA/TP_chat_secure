@@ -21,7 +21,7 @@ class CipheredGUI(BasicGUI):
     """
     GUI for a chat secured client. Way more secured.
     """
-    def __init__(self, host:str, port:int)->None:
+    def __init__(self)->None:
         # constructor
         self._client = None
         self._callback = None
@@ -63,6 +63,9 @@ class CipheredGUI(BasicGUI):
         # on récupère le mot de passe
         password = dpg.get_value("connection_password")
         
+        # fonction de débuggage
+        print(f"password = {password}")
+        
         self._log.info(f"Connecting {name}@{host}:{port}")
 
         self._callback = GenericCallback()
@@ -87,14 +90,16 @@ class CipheredGUI(BasicGUI):
 
     # cette fonction sert à chiffrer les messages
     def encrypt(message, self)->None:
+        print("Chiffrement du message...")
         iv = os.urandom(16)
         cipher = Cipher(algorithms.AES(self._key), modes.CBC(iv))
         encryptor = cipher.encryptor()
         encrypted_message = encryptor.update(bytes(message, "UTF-8")) + encryptor.finalize()
-        
         return(iv, encrypted_message)
+        print("Message chiffré")
 
-    def decrypt(iv, encrypted_message, self)->None:
+    def decrypt(data, self)->None:
+        iv, encrypted_message = data
         cipher = Cipher(algorithms.AES(self._key), modes.CBC(iv))
         decryptor = cipher.decryptor()
         message = decryptor.update(encrypted_message) + decryptor.finalize()
@@ -102,20 +107,35 @@ class CipheredGUI(BasicGUI):
         return(message)
 
     def send_message(self, message:str)->None:
+        print("envoi du message")
         with Proxy(self._uri) as server:
             encrypted_message = self.encrypt(message)
             server.send_message(self._name, encrypted_message)
+
+            print(f"Message chiffré : {encrypted_message}")
     
-    def recv(self)->None:
+    def recv(self, data)->None:
         # function called to get incoming messages and display them
         if self._callback is not None:
             for user, message in self._callback.get():
-                self.update_text_screen(f"{user} : {message}")
+                self.update_text_screen(f"{user} : {self.decrypt(data, self)}")
             self._callback.clear()
+
+    def send(self, text)->None:
+        # function called to send a message to all (broadcasting)
+        self._client.send_message(text)
+
+    def loop(self, data):
+        # main loop
+        while dpg.is_dearpygui_running():
+            self.recv(data)
+            dpg.render_dearpygui_frame()
+
+        dpg.destroy_context()
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-
+    
     # instanciate the class, create context and related stuff, run the main loop
     client = CipheredGUI()
     client.create()
