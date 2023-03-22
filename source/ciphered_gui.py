@@ -2,9 +2,10 @@ import logging
 
 import dearpygui.dearpygui as dpg
 import os
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
 
 from chat_client import *
 from generic_callback import GenericCallback
@@ -55,6 +56,7 @@ class CipheredGUI(BasicGUI):
 
 
     def run_chat(self, sender, app_data)->None:
+        self._log.info("Chat running...")
         # callback used by the connection windows to start a chat session
         host = dpg.get_value("connection_host")
         port = int(dpg.get_value("connection_port"))
@@ -64,7 +66,7 @@ class CipheredGUI(BasicGUI):
         password = dpg.get_value("connection_password")
         
         # fonction de débuggage
-        print(f"password = {password}")
+        self._log.info(f"password = {password}")
         
         self._log.info(f"Connecting {name}@{host}:{port}")
 
@@ -76,62 +78,83 @@ class CipheredGUI(BasicGUI):
 
         # on définit les paramètres de la fonction qui permettra de dériver la clé
         salt = b"Gloire au Saint-Transistor" #on définit un sel constant
-        kdf = PBKDF2HMAC(algorithm=hashes.SHA256, length = 256, salt = salt, iterations = 48000)
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA256, length = 16, salt = salt, iterations = 100000)
 
         #on convertit le mot de passe du format string au format bytes
-        b_password = bytes(password, "UTF-8")
+        b_password = bytes(password, "utf8")
 
         # on dérive ensuite le mot de passe :
         self._key = kdf.derive(b_password)
+
+        # fonction de débuggage
+        self._log.info(f"La clé dérivée est la suivante : {self._key}")
         
         dpg.hide_item("connection_windows")
         dpg.show_item("chat_windows")
         dpg.set_value("screen", "Connecting")
 
-    # cette fonction sert à chiffrer les messages
-    def encrypt(message, self)->None:
-        print("Chiffrement du message...")
-        iv = os.urandom(16)
-        cipher = Cipher(algorithms.AES(self._key), modes.CBC(iv))
-        encryptor = cipher.encryptor()
-        encrypted_message = encryptor.update(bytes(message, "UTF-8")) + encryptor.finalize()
-        return(iv, encrypted_message)
-        print("Message chiffré")
 
-    def decrypt(data, self)->None:
+    # cette fonction sert à chiffrer les messages
+    def encrypt(self, message)->None:
+        self._log.info("Chiffrement du message...")
+        iv = os.urandom(16)
+        
+        self._log.info(f"La clé utilisée pour le chiffrement est la suivante : {self._key}")
+        
+        cipher = Cipher(algorithms.AES(self._key), modes.CBC(iv), backend = default_backend())
+
+
+        #comme le chiffrement se fait par bloc, il faut ajouter un padding, un remplissage afin que la taille du bloc soit un multiple de la longueur du bloc     
+        padder = padding.PKCS7(128).padder()
+
+        self._log.info(f"Message avant chiffrement et padding : {message}")
+
+        padded_data = padder.update(bytes(message, "utf8")) + padder.finalize()
+        
+        self._log.info(f"Données + padding : {padded_data}")
+
+        encryptor = cipher.encryptor()
+        encrypted_message = encryptor.update(str(padded_data, "utf8")) + encryptor.finalize()
+        
+        self._log.info(f"Message chiffré : {encrypted_message}")
+
+        return(iv, encrypted_message)
+
+
+    def decrypt(self, data)->None:
+        self._log.info("Déchiffrement du message")
         iv, encrypted_message = data
-        cipher = Cipher(algorithms.AES(self._key), modes.CBC(iv))
+        cipher = Cipher(algorithms.AES(self._key), modes.CBC(iv), backend = default_backend())
         decryptor = cipher.decryptor()
         message = decryptor.update(encrypted_message) + decryptor.finalize()
-        message = str(message, encoding = "utf-8", errors = "strict")
+        message = str(message, encoding = "utf-8")
         return(message)
-
-    def send_message(self, message:str)->None:
-        print("envoi du message")
-        with Proxy(self._uri) as server:
-            encrypted_message = self.encrypt(message)
-            server.send_message(self._name, encrypted_message)
-
-            print(f"Message chiffré : {encrypted_message}")
     
-    def recv(self, data)->None:
+
+    def recv(self)->None:
         # function called to get incoming messages and display them
         if self._callback is not None:
             for user, message in self._callback.get():
-                self.update_text_screen(f"{user} : {self.decrypt(data, self)}")
+                self.update_text_screen(f"{user} : {self.decrypt(message)}")
             self._callback.clear()
 
-    def send(self, text)->None:
-        # function called to send a message to all (broadcasting)
-        self._client.send_message(text)
 
-    def loop(self, data):
+    def send(self, text)->None:
+        self._log.info("Fonction d'envoi du message")
+        # function called to send a message to all (broadcasting)
+        encrypted_text = self.encrypt(text)
+        self._client.send_message(encrypted_text)
+        self._log.info("Envoi du message")
+        
+
+    def loop(self):
         # main loop
         while dpg.is_dearpygui_running():
-            self.recv(data)
+            self.recv()
             dpg.render_dearpygui_frame()
 
         dpg.destroy_context()
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
