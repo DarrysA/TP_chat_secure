@@ -2,6 +2,8 @@ import logging
 
 import dearpygui.dearpygui as dpg
 import os
+import base64
+
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -29,7 +31,7 @@ class CipheredGUI(BasicGUI):
         self._log = logging.getLogger(self.__class__.__name__)
         # ajout du champ pour la clé de chiffrement
         self._key = None
-        #on ajoute cette donnée membre qui est nécessaire pour la fonction envoi
+        
         
 
     def _create_chat_window(self)->None:
@@ -51,7 +53,7 @@ class CipheredGUI(BasicGUI):
                     
             #ajout d'un champ pour le mot de passe
             dpg.add_text("password")
-            dpg.add_input_text(password = True, id = "connection_password")
+            dpg.add_input_text(password = True, tag = "connection_password")
             dpg.add_button(label="Connect", callback=self.run_chat)
 
 
@@ -67,7 +69,7 @@ class CipheredGUI(BasicGUI):
         
         # fonction de débuggage
         self._log.info(f"password = {password}")
-        
+
         self._log.info(f"Connecting {name}@{host}:{port}")
 
         self._callback = GenericCallback()
@@ -98,6 +100,7 @@ class CipheredGUI(BasicGUI):
     def encrypt(self, message)->None:
         self._log.info("Chiffrement du message...")
         iv = os.urandom(16)
+        self._log.info(f"Affichage du vecteur d'initialisation : {iv}")
         
         self._log.info(f"La clé utilisée pour le chiffrement est la suivante : {self._key}")
         
@@ -123,12 +126,30 @@ class CipheredGUI(BasicGUI):
 
     def decrypt(self, data)->None:
         self._log.info("Déchiffrement du message")
-        iv, encrypted_message = data
-        cipher = Cipher(algorithms.AES(self._key), modes.CBC(iv), backend = default_backend())
+        #iv, encrypted_message = data
+        
+        self._log.info(f"Affichage du vecteur d'initialisation : {data[0]}")
+        self._log.info(f"Affichage du message à déchiffrer : {data[1]}")
+
+        self._log.info(f"ameno 1")
+
+        #conversion du vecteur d'initialisation et du message :
+        iv = base64.b64decode(data[0])
+
+        self._log.info(f"ameno 2")
+
+        encrypted_message = base64.b64decode(data[1])
+
+        cipher = Cipher(algorithms.AES(self._key), modes.CBC(bytes(iv, "utf8")), backend = default_backend())
+        self._log.info(f"hic sunt dracones 1")
         decryptor = cipher.decryptor()
+        self._log.info(f"hic sunt dracones 2")
         message = decryptor.update(encrypted_message) + decryptor.finalize()
-        message = str(message, encoding = "utf-8")
+        self._log.info(f"hic sunt dracones 3")
+        message = str(message, "utf-8")
+        self._log.info(f"hic sunt dracones 4")
         return(message)
+        self._log.info("Message déchiffré")
     
 
     def recv(self)->None:
