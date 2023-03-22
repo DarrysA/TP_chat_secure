@@ -126,21 +126,21 @@ class CipheredGUI(BasicGUI):
 
     def decrypt(self, data)->None:
         self._log.info("Déchiffrement du message")
-        #iv, encrypted_message = data
+        iv, encrypted_message = data
         
         self._log.info(f"Affichage du vecteur d'initialisation : {data[0]}")
         self._log.info(f"Affichage du message à déchiffrer : {data[1]}")
 
-        self._log.info(f"ameno 1")
+        self._log.info(f"ameno 1") 
 
         #conversion du vecteur d'initialisation et du message :
-        iv = base64.b64decode(data[0])
+        #iv = base64.b64decode(bytes(data[0]))
 
         self._log.info(f"ameno 2")
 
-        encrypted_message = base64.b64decode(data[1])
+        #encrypted_message = data[1]
 
-        cipher = Cipher(algorithms.AES(self._key), modes.CBC(bytes(iv, "utf8")), backend = default_backend())
+        cipher = Cipher(algorithms.AES(self._key), modes.CBC(iv.decode()), backend = default_backend())
         self._log.info(f"hic sunt dracones 1")
         decryptor = cipher.decryptor()
         self._log.info(f"hic sunt dracones 2")
