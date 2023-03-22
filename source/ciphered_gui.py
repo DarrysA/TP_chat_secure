@@ -109,12 +109,12 @@ class CipheredGUI(BasicGUI):
 
         self._log.info(f"Message avant chiffrement et padding : {message}")
 
-        padded_data = padder.update(bytes(message, "utf8")) + padder.finalize()
+        padded_data = padder.update(message.encode()) + padder.finalize()
         
         self._log.info(f"Données + padding : {padded_data}")
 
         encryptor = cipher.encryptor()
-        encrypted_message = encryptor.update(str(padded_data, "utf8")) + encryptor.finalize()
+        encrypted_message = encryptor.update(padded_data) + encryptor.finalize()
         
         self._log.info(f"Message chiffré : {encrypted_message}")
 
