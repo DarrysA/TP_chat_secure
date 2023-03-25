@@ -7,7 +7,7 @@ import os
 
 
 TAILLE_CLEF_BLOC = 32 #taille de la clé en octets
-SEL = b"Gloire au Saint-Transistor"
+SEL = b"Gloire au Saint-Transistor" # création d'un sel fixe
 NB_ITERATIONS = 480000
 
 
@@ -42,19 +42,20 @@ class FernetGUI(CipheredGUI):
         self._client.start(self._callback)
         self._client.register(name)
 
-        # on définit les paramètres de la fonction qui permettra de dériver la clé
-        kdf = hmac.HMAC(algorithm=hashes.SHA256, length = TAILLE_CLEF_BLOC, salt = SEL, iterations = NB_ITERATIONS)
+        # génération de la clé à l'aide de SHA256 à partir du mot de passe
+        self._key = hashlib.sha256()
+        self._key.update(password.encode("utf-8"))
+        #self._key.digest()
 
-        #on convertit le mot de passe du format string au format bytes
-        b_password = bytes(password, "utf8")
+        self._log.info(f"Affichage de la clé : {self._key}")
 
-        # génération de la clé
-        self._key = Fernet.generate_key()
+        # on convertit la clé en base 64
+        self._key = base64.b64encode(self._key.digest())
+
+        self._log.info(f"Affichage de la clé en base64 : {self._key}")
+
         f = Fernet(self._key)
 
-        # fonction de débuggage
-        self._log.info(f"La clé dérivée est la suivante : {self._key}")
-        
         dpg.hide_item("connection_windows")
         dpg.show_item("chat_windows")
         dpg.set_value("screen", "Connecting")
@@ -100,4 +101,10 @@ class FernetGUI(CipheredGUI):
         return(message)
 
 
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
     
+    # instanciate the class, create context and related stuff, run the main loop
+    client = FernetGUI()
+    client.create()
+    client.loop()
