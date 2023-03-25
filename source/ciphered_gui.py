@@ -134,19 +134,20 @@ class CipheredGUI(BasicGUI):
 
         #conversion du vecteur d'initialisation et du message :
         iv = base64.b64decode(data[0]["data"])
-        encrypted_message = base64.b64decode(data[1]["data"])
-
-        
+        encrypted_message = base64.b64decode(data[1]["data"])        
 
         self._log.info(f"ameno 2")
 
-        #encrypted_message = data[1]
-
         cipher = Cipher(algorithms.AES(self._key), modes.CTR(iv), backend = default_backend())
+
+        unpadder = padding.PKCS7(128).unpadder()
+        encrypted_message_unpadded = unpadder.update(encrypted_message)
+        encrypted_message_unpadded = encrypted_message_unpadded + unpadder.finalize()
+
         self._log.info(f"hic sunt dracones 1")
         decryptor = cipher.decryptor()
         self._log.info(f"hic sunt dracones 2")
-        message = decryptor.update(encrypted_message) + decryptor.finalize()
+        message = decryptor.update(encrypted_message_unpadded) + decryptor.finalize()
         self._log.info(f"hic sunt dracones 3")
         message = str(message, "utf-8")
         self._log.info(f"hic sunt dracones 4")
