@@ -1,15 +1,14 @@
 from ciphered_gui import *
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes, hmac
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import base64
 import hashlib
 import os
 
 
-ITERATION = 480000
-TAILLE_CLE = 32 # taille de la clé en octets
+TAILLE_CLEF_BLOC = 32 #taille de la clé en octets
 SEL = b"Gloire au Saint-Transistor"
+NB_ITERATIONS = 480000
 
 
 class FernetGUI(CipheredGUI):
@@ -24,6 +23,7 @@ class FernetGUI(CipheredGUI):
         # ajout du champ pour la clé de chiffrement
         self._key = None
 
+
     def run_chat(self, sender, app_data)->None:
         self._log.info("Chat running...")
         # callback used by the connection windows to start a chat session
@@ -33,9 +33,6 @@ class FernetGUI(CipheredGUI):
 
         # on récupère le mot de passe
         password = dpg.get_value("connection_password")
-        
-        # fonction de débuggage
-        self._log.info(f"password = {password}")
 
         self._log.info(f"Connecting {name}@{host}:{port}")
 
@@ -46,7 +43,7 @@ class FernetGUI(CipheredGUI):
         self._client.register(name)
 
         # on définit les paramètres de la fonction qui permettra de dériver la clé
-        kdf = hmac.HMAC(algorithm=hashes.SHA256, length = TAILLE_CLE, salt = SEL, iterations = ITERATION)
+        kdf = hmac.HMAC(algorithm=hashes.SHA256, length = TAILLE_CLEF_BLOC, salt = SEL, iterations = NB_ITERATIONS)
 
         #on convertit le mot de passe du format string au format bytes
         b_password = bytes(password, "utf8")
@@ -62,58 +59,45 @@ class FernetGUI(CipheredGUI):
         dpg.show_item("chat_windows")
         dpg.set_value("screen", "Connecting")
 
+
+    # cette fonction sert à chiffrer les messages
     def encrypt(self, message):
-        self._log.info("Chiffrement du message...")
+        self._log.info("Début de chiffrement du message...")
         iv = os.urandom(16)
-        self._log.info(f"Affichage du vecteur d'initialisation : {iv}")
         
-        self._log.info(f"La clé utilisée pour le chiffrement est la suivante : {self._key}")
-        
-        cipher = Cipher(algorithms.AES(self._key), modes.CTR(iv), backend = default_backend())
-
-
-        #comme le chiffrement se fait par bloc, il faut ajouter un padding, un remplissage afin que la taille du bloc soit un multiple de la longueur du bloc     
-        padder = padding.PKCS7(128).padder()
-
-        self._log.info(f"Message avant chiffrement et padding : {message}")
-
+        # comme le chiffrement se fait par bloc, il faut ajouter un padding 
+        # il s'agit d'un remplissage afin que la taille du bloc soit un multiple de la longueur du bloc     
+        self._log.info("Création du padding")
+        padder = padding.PKCS7(TAILLE_CLEF_BLOC).padder()
         padded_data = padder.update(message.encode()) + padder.finalize()
         
-        self._log.info(f"Données + padding : {padded_data}")
-
+        #chiffrement du message
+        self._log.info("Chiffrement du message")
+        cipher = Cipher(algorithms.AES(self._key), modes.CTR(iv), backend = default_backend())
         encryptor = cipher.encryptor()
         encrypted_message = encryptor.update(padded_data) + encryptor.finalize()
         
-        self._log.info(f"Message chiffré : {encrypted_message}")
-
         return(iv, encrypted_message)
-    
-    def decrypt(self, data):
-        self._log.info("Déchiffrement du message")
-        iv, encrypted_message = data
-        
-        self._log.info(f"Affichage du vecteur d'initialisation : {data[0]}")
-        self._log.info(f"Affichage du message à déchiffrer : {data[1]}")
 
-        self._log.info(f"ameno 1") 
+
+    def decrypt(self, data):
+        self._log.info("Déchiffrement du message...")
 
         #conversion du vecteur d'initialisation et du message :
-        iv = base64.b64decode(data[0]['data'])
+        iv = base64.b64decode(data[0]["data"])
+        encrypted_message = base64.b64decode(data[1]["data"])        
 
-        self._log.info(f"ameno 2")
-
-        encrypted_message = base64.b64decode(data[1]['data'])
-
+        #déchiffrement du message
         cipher = Cipher(algorithms.AES(self._key), modes.CTR(iv), backend = default_backend())
-        self._log.info(f"hic sunt dracones 1")
         decryptor = cipher.decryptor()
-        self._log.info(f"hic sunt dracones 2")
-        message = decryptor.update(encrypted_message) + decryptor.finalize()
-        self._log.info(f"hic sunt dracones 3")
-        message = str(message, "utf-8")
-        self._log.info(f"hic sunt dracones 4")
+        decrypted_message = decryptor.update(encrypted_message) + decryptor.finalize()
+
+        #unpadding du message
+        unpadder = padding.PKCS7(TAILLE_CLEF_BLOC).unpadder()
+        unpadded_message = unpadder.update(decrypted_message) + unpadder.finalize()
+        message = str(unpadded_message, "utf-8")
+
         return(message)
-        self._log.info("Message déchiffré")
 
 
     
