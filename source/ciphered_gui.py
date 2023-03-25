@@ -136,6 +136,7 @@ class CipheredGUI(BasicGUI):
         iv = base64.b64decode(data[0]["data"])
         encrypted_message = base64.b64decode(data[1]["data"])
 
+        
 
         self._log.info(f"ameno 2")
 
