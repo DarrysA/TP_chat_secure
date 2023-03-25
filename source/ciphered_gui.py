@@ -20,6 +20,10 @@ DEFAULT_VALUES = {
     "name" : "foo"
 }
 
+TAILLE_CLEF_BLOC = 16
+SEL = b"Gloire au Saint-Transistor"
+NB_ITERATIONS = 480000
+
 class CipheredGUI(BasicGUI):
     """
     GUI for a chat secured client. Way more secured.
@@ -79,8 +83,7 @@ class CipheredGUI(BasicGUI):
         self._client.register(name)
 
         # on définit les paramètres de la fonction qui permettra de dériver la clé
-        salt = b"Gloire au Saint-Transistor" #on définit un sel constant
-        kdf = PBKDF2HMAC(algorithm=hashes.SHA256, length = 16, salt = salt, iterations = 100000)
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA256, length = TAILLE_CLEF_BLOC, salt = SEL, iterations = NB_ITERATIONS)
 
         #on convertit le mot de passe du format string au format bytes
         b_password = bytes(password, "utf8")
@@ -130,26 +133,28 @@ class CipheredGUI(BasicGUI):
         self._log.info(f"Affichage du vecteur d'initialisation : {data[0]}")
         self._log.info(f"Affichage du message à déchiffrer : {data[1]}")
 
-        self._log.info(f"ameno 1") 
-
         #conversion du vecteur d'initialisation et du message :
         iv = base64.b64decode(data[0]["data"])
         encrypted_message = base64.b64decode(data[1]["data"])        
 
-        self._log.info(f"ameno 2")
-
         cipher = Cipher(algorithms.AES(self._key), modes.CTR(iv), backend = default_backend())
 
         unpadder = padding.PKCS7(128).unpadder()
-        encrypted_message_unpadded = unpadder.update(encrypted_message)
-        encrypted_message_unpadded = encrypted_message_unpadded + unpadder.finalize()
-
-        self._log.info(f"hic sunt dracones 1")
+        
+        self._log.info(f"Message chiffré après unpadding : {encrypted_message}")
+        
         decryptor = cipher.decryptor()
+
         self._log.info(f"hic sunt dracones 2")
-        message = decryptor.update(encrypted_message_unpadded) + decryptor.finalize()
+
+        decrypted_message = decryptor.update(encrypted_message) + decryptor.finalize()
+        
+        self._log.info(f"Message déchiffré à unpadder : {decrypted_message}")
+
+        unpadded_message = unpadder.update(decrypted_message) + unpadder.finalize()
+        
         self._log.info(f"hic sunt dracones 3")
-        message = str(message, "utf-8")
+        message = str(unpadded_message, "utf-8")
         self._log.info(f"hic sunt dracones 4")
         return(message)
         
