@@ -1,6 +1,6 @@
 # TP secure chat
 
-## Prise en main
+## 1. Prise en main
 
 1. Cette topologie semble être une topologie en étoile.
 
@@ -10,3 +10,6 @@
 
 4. La solution la plus simple serait donc de mettre en place un chiffrement de données, de telle sorte à ce que seuls les interlocuteurs aient accès aux messages échangés.
 
+## 2. Chiffrement
+
+1. 
