@@ -104,7 +104,7 @@ class CipheredGUI(BasicGUI):
         
         self._log.info(f"La clé utilisée pour le chiffrement est la suivante : {self._key}")
         
-        cipher = Cipher(algorithms.AES(self._key), modes.CBC(iv), backend = default_backend())
+        cipher = Cipher(algorithms.AES(self._key), modes.CTR(iv), backend = default_backend())
 
 
         #comme le chiffrement se fait par bloc, il faut ajouter un padding, un remplissage afin que la taille du bloc soit un multiple de la longueur du bloc     
@@ -126,7 +126,6 @@ class CipheredGUI(BasicGUI):
 
     def decrypt(self, data)->None:
         self._log.info("Déchiffrement du message")
-        iv, encrypted_message = data
         
         self._log.info(f"Affichage du vecteur d'initialisation : {data[0]}")
         self._log.info(f"Affichage du message à déchiffrer : {data[1]}")
@@ -134,13 +133,15 @@ class CipheredGUI(BasicGUI):
         self._log.info(f"ameno 1") 
 
         #conversion du vecteur d'initialisation et du message :
-        #iv = base64.b64decode(bytes(data[0]))
+        iv = base64.b64decode(data[0]["data"])
+        encrypted_message = base64.b64decode(data[1]["data"])
+
 
         self._log.info(f"ameno 2")
 
         #encrypted_message = data[1]
 
-        cipher = Cipher(algorithms.AES(self._key), modes.CBC(iv.decode()), backend = default_backend())
+        cipher = Cipher(algorithms.AES(self._key), modes.CTR(iv), backend = default_backend())
         self._log.info(f"hic sunt dracones 1")
         decryptor = cipher.decryptor()
         self._log.info(f"hic sunt dracones 2")
@@ -149,7 +150,7 @@ class CipheredGUI(BasicGUI):
         message = str(message, "utf-8")
         self._log.info(f"hic sunt dracones 4")
         return(message)
-        self._log.info("Message déchiffré")
+        
     
 
     def recv(self)->None:
