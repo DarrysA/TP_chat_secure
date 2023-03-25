@@ -54,8 +54,6 @@ class FernetGUI(CipheredGUI):
 
         self._log.info(f"Affichage de la clé en base64 : {self._key}")
 
-        f = Fernet(self._key)
-
         dpg.hide_item("connection_windows")
         dpg.show_item("chat_windows")
         dpg.set_value("screen", "Connecting")
@@ -64,40 +62,29 @@ class FernetGUI(CipheredGUI):
     # cette fonction sert à chiffrer les messages
     def encrypt(self, message):
         self._log.info("Début de chiffrement du message...")
-        iv = os.urandom(16)
-        
-        # comme le chiffrement se fait par bloc, il faut ajouter un padding 
-        # il s'agit d'un remplissage afin que la taille du bloc soit un multiple de la longueur du bloc     
-        self._log.info("Création du padding")
-        padder = padding.PKCS7(TAILLE_CLEF_BLOC).padder()
-        padded_data = padder.update(message.encode()) + padder.finalize()
         
         #chiffrement du message
-        self._log.info("Chiffrement du message")
-        cipher = Cipher(algorithms.AES(self._key), modes.CTR(iv), backend = default_backend())
-        encryptor = cipher.encryptor()
-        encrypted_message = encryptor.update(padded_data) + encryptor.finalize()
-        
-        return(iv, encrypted_message)
+        self._log.info("Chiffrement du message...")
+        f = Fernet(self._key)
+        encrypted_message = f.encrypt(bytes(message, "utf-8"))
+        self._log.info("Message chiffré !")
+
+        self._log.info(f"[temporaire] Affichage du message chiffré : {encrypted_message}")
+
+        return(encrypted_message)
 
 
-    def decrypt(self, data):
+    def decrypt(self, encrypted_message):
         self._log.info("Déchiffrement du message...")
 
         #conversion du vecteur d'initialisation et du message :
-        iv = base64.b64decode(data[0]["data"])
-        encrypted_message = base64.b64decode(data[1]["data"])        
+        #iv = base64.b64decode(data[0]["data"])
+        encrypted_message = base64.b64decode(encrypted_message['data'])        
 
         #déchiffrement du message
-        cipher = Cipher(algorithms.AES(self._key), modes.CTR(iv), backend = default_backend())
-        decryptor = cipher.decryptor()
-        decrypted_message = decryptor.update(encrypted_message) + decryptor.finalize()
-
-        #unpadding du message
-        unpadder = padding.PKCS7(TAILLE_CLEF_BLOC).unpadder()
-        unpadded_message = unpadder.update(decrypted_message) + unpadder.finalize()
-        message = str(unpadded_message, "utf-8")
-
+        f = Fernet(self._key)
+        message = f.decrypt(encrypted_message)
+        message = str(message, "utf-8")
         return(message)
 
 
