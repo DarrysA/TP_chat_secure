@@ -79,11 +79,12 @@ class CipheredGUI(BasicGUI):
         self._client.start(self._callback)
         self._client.register(name)
 
-        # on définit les paramètres de la fonction qui permettra de dériver la clé
-        kdf = PBKDF2HMAC(algorithm=hashes.SHA256, length = TAILLE_CLEF_BLOC, salt = SEL, iterations = NB_ITERATIONS)
-
+        
         #on convertit le mot de passe du format string au format bytes
         b_password = bytes(password, "utf8")
+
+        # on définit les paramètres de la fonction qui permettra de dériver la clé
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA256, length = TAILLE_CLEF_BLOC, salt = SEL, iterations = NB_ITERATIONS)
 
         # on dérive ensuite le mot de passe :
         self._key = kdf.derive(b_password)
@@ -148,15 +149,6 @@ class CipheredGUI(BasicGUI):
         encrypted_text = self.encrypt(text)
         self._client.send_message(encrypted_text)
         self._log.info("Envoi du message")
-        
-
-    def loop(self):
-        # main loop
-        while dpg.is_dearpygui_running():
-            self.recv()
-            dpg.render_dearpygui_frame()
-
-        dpg.destroy_context()
 
 
 if __name__ == "__main__":
