@@ -30,4 +30,13 @@
 
 ## 4. TTL
 
-1. 
+1. La différence avec le chapitre précédent vient de l'ajout d'un horodatage, qui permet d'empêcher la récupération et la restitution du message, puisqu'un message trop vieux générera une erreur.
+
+2. Lorsqu'on soustrait 45 au temps lors de l'émission, on remarque que cela déclenche une erreur, que l'on peut capturer en ajoutant une exception dans la fonction ```decrypt()```. Cette erreur se déclenche car le token (l'horodatage évoqué plus haut) est invalide : ainsi, le message envoyé n'ayant pas le même token que le message reçu, il est donc rejeté.
+
+3. Ce système permet de prévenir ou d'être au courant en cas de compromission du serveur ; cependant, il ne protège pas contre l'attaque en soi.
+
+4. Dans la pratique, ce système ne peut pas être utilisé si le chiffrement et le déchiffrement du message n'ont pas lieu au même moment, voire dans le contexte d'un échange de messages asynchrone.
+
+
+## Regard critique
