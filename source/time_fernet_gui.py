@@ -1,10 +1,7 @@
 from ciphered_gui import *
 from fernet_gui import *
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes, hmac
+from cryptography.fernet import Fernet, InvalidToken
 import base64
-import hashlib
-import os
 import time
 
 
@@ -20,12 +17,9 @@ class TimeFernetGUI(FernetGUI):
     def encrypt(self, message):
 
         #chiffrement du message
-        self._log.info("Chiffrement du message...")
         f = Fernet(self._key)
-        temps = int(time.time()) - 45
+        temps = int(time.time())
         encrypted_message = f.encrypt_at_time(bytes(message, "utf-8"), temps)
-        self._log.info("Message chiffré !")
-        self._log.info(f"[temporaire] Affichage du message chiffré : {encrypted_message}")
 
         return(encrypted_message)
 
@@ -33,15 +27,20 @@ class TimeFernetGUI(FernetGUI):
     def decrypt(self, encrypted_message):
         self._log.info("Déchiffrement du message...")
 
-        #conversion du vecteur d'initialisation et du message :
-        encrypted_message = base64.b64decode(encrypted_message['data'])        
+        try:
 
-        time.sleep(45)
+            #conversion du message au format base64 :
+            encrypted_message = base64.b64decode(encrypted_message['data'])        
 
-        #déchiffrement du message
-        f = Fernet(self._key)
-        temps = int(time.time())
-        message = f.decrypt_at_time(encrypted_message, TTL, temps)
+            #déchiffrement du message
+            f = Fernet(self._key)
+            temps = int(time.time())
+
+            message = f.decrypt_at_time(encrypted_message, TTL, temps)
+        
+        except InvalidToken as e:
+            self._log.info("Erreur : token invalide")
+
         message = str(message, "utf-8")
         return(message)
 
@@ -50,6 +49,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     
     # instanciate the class, create context and related stuff, run the main loop
-    client = FernetGUI()
+    client = TimeFernetGUI()
     client.create()
     client.loop()
