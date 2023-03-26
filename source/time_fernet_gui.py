@@ -5,36 +5,26 @@ from cryptography.hazmat.primitives import hashes, hmac
 import base64
 import hashlib
 import os
+import time
 
 
-TAILLE_CLEF_BLOC = 32 #taille de la clé en octets
-SEL = b"Gloire au Saint-Transistor" # création d'un sel fixe
-NB_ITERATIONS = 480000
+TTL = 30 #time to live en secondes
 
 
 class TimeFernetGUI(FernetGUI):
     """
     GUI for a fernet chat secured client. Way way more secured.
     """
-    
-    def encrypt_at_time(self, message):
-        
-        return 
-
-    def decrypt_at_time(self, message):
-
-        return
 
     # cette fonction sert à chiffrer les messages
     def encrypt(self, message):
-        self._log.info("Début de chiffrement du message...")
-        
+
         #chiffrement du message
         self._log.info("Chiffrement du message...")
         f = Fernet(self._key)
-        encrypted_message = f.encrypt(bytes(message, "utf-8"))
+        temps = int(time.time()) - 45
+        encrypted_message = f.encrypt_at_time(bytes(message, "utf-8"), temps)
         self._log.info("Message chiffré !")
-
         self._log.info(f"[temporaire] Affichage du message chiffré : {encrypted_message}")
 
         return(encrypted_message)
@@ -44,12 +34,14 @@ class TimeFernetGUI(FernetGUI):
         self._log.info("Déchiffrement du message...")
 
         #conversion du vecteur d'initialisation et du message :
-        #iv = base64.b64decode(data[0]["data"])
         encrypted_message = base64.b64decode(encrypted_message['data'])        
+
+        time.sleep(45)
 
         #déchiffrement du message
         f = Fernet(self._key)
-        message = f.decrypt(encrypted_message)
+        temps = int(time.time())
+        message = f.decrypt_at_time(encrypted_message, TTL, temps)
         message = str(message, "utf-8")
         return(message)
 
