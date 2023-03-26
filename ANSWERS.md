@@ -19,3 +19,15 @@
 3. Malgré le chiffrement, un serveur malveillant peut toujours nuire dans le cas où il se ferait passer pour l'un des interlocuteurs et modifierait les messages.
 
 4. Ici, parmi les 3 principes de confidentialité, intégrité et disponibilité, la confidentialité est assurée puisque les messages sont chiffrés et déchiffrés localement par les clients et les messages ne sont pas lisibles par le serveur. L'intégrité, en revanche, n'est pas assurée car il n'y a pas de moyen de vérifier que le message reçu est bien le même que le message émis.
+
+## 3. Authenticated Symetric Encryption
+
+1. Fernet est moins risqué que le précédent chapitre parce qu'il est plus facile à implémenter. Étant donné qu'il est plus facile à implémenter, il y a donc moins de risques qu'une mauvaise utilisation de l'algorithme fragilise le système.
+
+2. Cette attaque est appelée "replay attack" ou "attaque par rejeu".
+
+3. Une méthode permet de s'affranchir de l'attaque par rejeu : il s'agit de l'horodatage des messages. Le message envoyé possède un horodatage (ou timestamp) qui doit être calculé lors de sa réception. Si l'horodatage est identique, alors le message n'a pas été détourné.
+
+## 4. TTL
+
+1. 
