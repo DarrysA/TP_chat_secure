@@ -40,3 +40,5 @@
 
 
 ## Regard critique
+
+Une vulnérabilité potentielle peut se trouver au niveau de la méthode de chiffrement, basée sur un chiffrement symétrique. En premier lieu, la clé de chiffrement est générée à partir d'un mot de passe. Or, il s'avère qu'un même mot de passe fournit toujours la même clé. Il serait donc possible pour un attaquant de réaliser une attaque par force brute, surtout si le mot de passe est faible.
