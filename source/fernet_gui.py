@@ -25,7 +25,7 @@ class FernetGUI(CipheredGUI):
 
 
     def run_chat(self, sender, app_data)->None:
-        self._log.info("Chat running...")
+
         # callback used by the connection windows to start a chat session
         host = dpg.get_value("connection_host")
         port = int(dpg.get_value("connection_port"))
@@ -45,14 +45,9 @@ class FernetGUI(CipheredGUI):
         # génération de la clé à l'aide de SHA256 à partir du mot de passe
         self._key = hashlib.sha256()
         self._key.update(password.encode("utf-8"))
-        #self._key.digest()
-
-        self._log.info(f"Affichage de la clé : {self._key}")
 
         # on convertit la clé en base 64
         self._key = base64.b64encode(self._key.digest())
-
-        self._log.info(f"Affichage de la clé en base64 : {self._key}")
 
         dpg.hide_item("connection_windows")
         dpg.show_item("chat_windows")
@@ -61,21 +56,15 @@ class FernetGUI(CipheredGUI):
 
     # cette fonction sert à chiffrer les messages
     def encrypt(self, message):
-        self._log.info("Début de chiffrement du message...")
         
         #chiffrement du message
-        self._log.info("Chiffrement du message...")
         f = Fernet(self._key)
         encrypted_message = f.encrypt(bytes(message, "utf-8"))
-        self._log.info("Message chiffré !")
-
-        self._log.info(f"[temporaire] Affichage du message chiffré : {encrypted_message}")
 
         return(encrypted_message)
 
 
     def decrypt(self, encrypted_message):
-        self._log.info("Déchiffrement du message...")
 
         #conversion du vecteur d'initialisation et du message :
         #iv = base64.b64decode(data[0]["data"])

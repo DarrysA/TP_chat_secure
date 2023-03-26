@@ -25,7 +25,6 @@ class TimeFernetGUI(FernetGUI):
 
 
     def decrypt(self, encrypted_message):
-        self._log.info("Déchiffrement du message...")
 
         try:
 

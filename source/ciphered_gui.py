@@ -62,7 +62,6 @@ class CipheredGUI(BasicGUI):
 
 
     def run_chat(self, sender, app_data)->None:
-        self._log.info("Chat running...")
         # callback used by the connection windows to start a chat session
         host = dpg.get_value("connection_host")
         port = int(dpg.get_value("connection_port"))
@@ -96,17 +95,14 @@ class CipheredGUI(BasicGUI):
 
     # cette fonction sert à chiffrer les messages
     def encrypt(self, message):
-        self._log.info("Début de chiffrement du message...")
         iv = os.urandom(16)
         
         # comme le chiffrement se fait par bloc, il faut ajouter un padding 
         # il s'agit d'un remplissage afin que la taille du bloc soit un multiple de la longueur du bloc     
-        self._log.info("Création du padding")
         padder = padding.PKCS7(TAILLE_CLEF_BLOC).padder()
         padded_data = padder.update(message.encode()) + padder.finalize()
         
         #chiffrement du message
-        self._log.info("Chiffrement du message")
         cipher = Cipher(algorithms.AES(self._key), modes.CTR(iv), backend = default_backend())
         encryptor = cipher.encryptor()
         encrypted_message = encryptor.update(padded_data) + encryptor.finalize()
@@ -115,7 +111,6 @@ class CipheredGUI(BasicGUI):
 
 
     def decrypt(self, data):
-        self._log.info("Déchiffrement du message...")
 
         #conversion du vecteur d'initialisation et du message :
         iv = base64.b64decode(data[0]["data"])
@@ -144,11 +139,9 @@ class CipheredGUI(BasicGUI):
 
 
     def send(self, text)->None:
-        self._log.info("Fonction d'envoi du message")
         # function called to send a message to all (broadcasting)
         encrypted_text = self.encrypt(text)
         self._client.send_message(encrypted_text)
-        self._log.info("Envoi du message")
 
 
 if __name__ == "__main__":
